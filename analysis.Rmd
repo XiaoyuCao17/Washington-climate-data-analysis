@@ -1,0 +1,141 @@
+---
+title: "Final Project Report-BA3"
+author: "Xiaoyu, Kai, Mike"
+date: "2026-06-01"
+output: html_document
+---
+
+## 1. Abstract (Xiaoyu)
+
+This project focuses on greenhouse gas emissions and temperature trends in Washington State from 2012 to 2024. We used one dataset about reported greenhouse gas emissions and another dataset about Washington’s average temperature. After cleaning the data, we joined them by year so we could compare emission changes with temperature patterns. Our results show that total emissions generally increased over time, especially after 2021. The supplier sector had some of the highest reported emissions compared with other sectors. The temperature data did not show a simple pattern where every year became hotter, but it did show that temperatures changed unevenly across different years. Overall, our findings suggest that emission reduction efforts may not be strong enough yet, and climate effects may take time to fully appear.
+
+## 2. Introduction (Kai)
+
+The topic of climate change, specifically greenhouse gas emissions, is interesting to us because we hear so much about it but haven’t actually looked into the data ourselves. We know that greenhouse gas emissions are the release of gases like carbon dioxide, methane, and nitrous oxide into the atmosphere through burning fossil fuels, using certain fertilizers, and other methods. Because of all these gases, the climate has been changing and the world is warming. We aimed to answer these questions in our analysis:
+
+1.  How does the trend of carbon emissions over the years graph directly and indirectly reflect the Washington state local climate change impact on the residents' health?
+2.  How have greenhouse gas emissions in Washington changed over the years, and what does this change mean?
+3.  Is the Earth actually getting hotter because of climate change?
+4.  Have companies been effectively integrating emission reduction practices?
+
+Our analysis is important because it provides simple, easy to read data and explanations of climate change for people who might not have looked into the actual data and research behind climate change. Our analysis creates a starting point for people who might want to begin to look at the science behind climate change themselves so that they can understand it better.
+
+## 3. Datasets (Kai)
+
+Our first dataset is about greenhouse gas emissions in the state of Washington. The data was collected by each company and was sent to the Washington State Department of Ecology, who created the dataset. The data is freely accessible to everyone, as it is a part of a government program. This dataset provides the amount of reported emissions in metric tons, and includes the sector of the report, the company, as well as the city and county. We chose this dataset because greenhouse gases are a large contributor to climate change. This supports our research questions because it can help us see how effective reduction practices may have been. <https://data.wa.gov/Natural-Resources-Environment/GHG-Reporting-Program-Publication/idhm-59de/data_preview>
+
+Our second dataset is about temperature change in Washington. The data is collected by a government organization, National Centers for Environmental Information. They provide a range of data that you can select from. We chose to download a dataset about the average temperature each month in the state of Washington from 2012 to 2024. Again, this is a government website so the data is free to download. This information was useful in our analysis because it allowed us to have something to compare the greenhouse gas emissions to. Rising or fluctuating temperatures can be connected to periods of increasing emissions, and help explain exactly how the natural world is being affected by gas emissions. <https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/statewide/time-series/45/tavg/1/0/2012-2024>
+
+## 4. Data (Mike)
+
+For the first dataset about the greenhouse gas emissions in Washington (GHG_Reporting_Program_Publication_20260510.csv), there are a total of 2521 rows and 26 columns. The row represents the report of greenhouse gas emissions by the reporter in a different area. The variable we choose to use is the “Year”, which shows the numerical year from 2012 to 2024. The variable “Sector” shows the categorical names of each company. The variable “City” shows the categorical names of each city. The variable “Reported Emissions (MTCO2e)” shows the numerical values of greenhouse gas emissions. There are 3 missing values from these selected relevant variables.
+
+For the second dataset about the temperature change in Washington (data.csv), there are a total of 158 rows and 1 column. The row represents the data value of the date and temperature. After mutating the columns, we split them into 3 columns. The variable “year” shows the numerical year from 2012 to 2024. The variable “month” shows the numerical month from January to December. The variable “temperature” shows the numerical value of the average temperature in Washington. There are 2 unusable and implausible values from the original dataset variable. After cleaning the dataset, it will be removed.
+
+## 5. Method (Mike)
+
+Import the datasets using the read_delim() method, check each dataset’s delimiter, and make adjustments, such as setting the separator, before cleaning up the dataset. For the GHG report dataset, we selected only the relevant variable for the research question using the filter() and select() method. For the temperature dataset, we need to modify the dataset column before merging because all the data values are combined together; we need to split the dataset. Therefore, the mutate() method with gsub() is an important step. Before merging the dataset, we used filter() to remove missing values and unusable values. After completing all the steps, we can merge the dataset by using “year” as the merge key, and the merged dataset does not need to depend on any dataset because the year range is the same from 2012 to 2024. For the GHG report dataset, we use sum() and n() to sum the total greenhouse gas emissions for each year and divide by the count to find the average greenhouse gas emissions. After merging the dataset, we chose to create new numerical and categorical columns to represent the temperature difference and the season.
+
+The relevant variables used to answer the first research question are the “year”, “temperature”, and “total_emission”. We compare the trend between the minimum temperature and the total greenhouse gas emissions in each year using a line plot. For the second research question, we used the “year” and “total_emission”. We are using the histogram to compare the trend of whether the median of the greenhouse gas emissions is higher or lower starting in 2015. For the third research question, we used the “year” and “temperature” variables by creating a box plot to analyze the trend of the temperature change to show if the greenhouse gas emissions impact climate change. For the fourth research question, we used the “year”, “sector”, and “total_emission” variables to create a bar plot starting in 2018. We are comparing the difference between each sector to determine which companies are effectively integrating emission reduction practices.
+
+The challenges we encountered were when modifying the temperature dataset because it’s an abnormal dataset format. Then, it takes a longer time using the gsub() method to split the dataset into 3 columns. The limitation we encountered is that the year range was considered not large enough to show more reliable results.
+
+```{r}
+library(tidyverse)
+report <- read_delim("data/GHG_Reporting_Program_Publication_20260510.csv")
+report <- report %>%
+  select(Year, Sector, City, `Reported Emissions (MTCO2e)`) %>%
+  filter(!is.na(Year), !is.na(Sector), !is.na(City), !is.na(`Reported Emissions (MTCO2e)`))
+report
+temp <- read_delim("data/data.csv", delim = "|")
+temp <- temp %>%
+  mutate(year = gsub("^(....).*", r"(\1)", `# Washington Average Temperature`)) %>%
+  mutate(month = gsub(".*(..),.*", r"(\1)", `# Washington Average Temperature`)) %>%
+  mutate(temperature = gsub(".*,", "", `# Washington Average Temperature`)) %>%
+  select(year, month, temperature) %>%
+  filter(year != "# Un") %>%
+  filter(year != "Date") %>%
+  mutate(year = as.numeric(year)) %>%
+  mutate(month = as.numeric(month)) %>%
+  mutate(temperature = as.numeric(temperature)) %>%
+  filter(!is.na(year), !is.na(temperature))
+temp
+trends <- report %>%
+  group_by(Year) %>%
+  summarize(count_year = n(), 
+            avg_emission_year = sum(`Reported Emissions (MTCO2e)`) / count_year,
+            total_emission_year = sum(`Reported Emissions (MTCO2e)`))
+trends
+final <- merge(trends, temp, by.x = "Year", by.y = "year")
+final <- final %>%
+  mutate(temperature_diff = temperature - mean(temperature)) %>%
+  mutate(season = ifelse(month == 3 | month == 4 | month == 5, "Spring",
+                         ifelse(month == 6 | month == 7 | month == 8, "Summer", 
+                                ifelse(month == 9 | month == 10 | month == 11, "Fall", "Winter"))))
+glimpse(final)
+```
+
+## 6. Results (Xiaoyu)
+
+1.  First, the relationship between total emissions and minimum temperature was not simple or perfectly linear. Total emissions increased a lot after 2021, but minimum temperature changed unevenly across the years. This suggests that climate effects may not appear immediately after changes in emissions, but emissions are still important because climate conditions can affect residents’ health, water quality, agriculture, and living conditions.\
+
+```{r, echo=FALSE}
+year_temp <- temp %>%
+  group_by(year) %>% 
+  summarize(small_temp = min(temperature))
+low_temp <- merge(trends, year_temp, 
+               by.x = "Year",
+               by.y = "year")
+low_temp %>% 
+  ggplot(aes(x=Year))+
+  geom_line(aes(y=total_emission_year), color = "blue")+
+  geom_line(aes(y=small_temp*550000), color="maroon")+
+  scale_x_continuous(breaks =seq(2012, 2024, by=2))+
+  scale_y_continuous(name = "Total Emissions (blue)",
+                     sec.axis = sec_axis(~./550000, name = "Min Temperature (red)"))
+```
+
+2.  Second, total reported greenhouse gas emissions in Washington State increased over time, especially after 2021. From 2015 to 2021, emissions stayed relatively stable, but they rose sharply in 2022 and remained high in 2023 and 2024. This suggests that reported emissions have not been consistently decreasing in recent years.\
+
+```{r}
+sectors <- report %>% 
+  group_by(Year) %>% 
+  filter(Year>=2015) %>% 
+  summarize(Emissions = sum(`Reported Emissions (MTCO2e)`), .groups = "drop_last") %>%
+  mutate(amount = ifelse(Emissions>median(Emissions), "High", "Low"))
+sectors %>% 
+  ggplot(aes(x=Year, y=Emissions, fill = amount))+
+  geom_histogram(stat = "identity")
+```
+
+3.  Washington’s temperature pattern did not show a simple trend where every year became hotter than the previous year. Instead, monthly average temperatures varied across years, with changes in both lower and higher temperature values. This suggests that climate change may appear through unstable or uneven temperature patterns, not only through a steady increase in average temperature\
+
+```{r}
+final %>% 
+  ggplot()+
+  geom_boxplot(aes(Year, temperature, group=Year), fill = "lightblue")
+```
+
+4.  Fourth, emissions were not evenly distributed across sectors. The supplier sector had much higher reported emissions than most other sectors in recent years. Other sectors, such as power plants and manufacturing, also contributed to total emissions, but the supplier sector stood out the most. This suggests that current emission reduction practices may not be strong enough yet to reduce total reported emissions across major sectors.\
+
+```{r}
+sector_change <- report %>% 
+  group_by(Year, Sector) %>% 
+  filter(Year>=2018) %>% 
+  summarize(total = sum(`Reported Emissions (MTCO2e)`), by.group=FALSE)
+sector_change %>% 
+  ggplot(aes(x=Year, y=total, fill=Sector))+
+  geom_bar(stat="identity", position = "dodge")
+```
+
+## 7. Discussion (Xiaoyu)
+
+The results suggest that Washington State still faces challenges in reducing greenhouse gas emissions. The sharp increase after 2021 means that reported emissions are not moving in a consistently positive direction. This matters because even if some sectors are trying to use greener practices, the overall trend shows that these efforts may not be enough to balance out industrial growth and energy demand.The sector results also show that emission problems are not spread equally. The supplier sector had much higher emissions than most other sectors, which suggests that climate policy may need to focus more on the largest contributors instead of treating all sectors the same. Reducing emissions from high-impact sectors could make a bigger difference than small changes across lower-emission sectors.The temperature results show that climate change is difficult to measure through one simple pattern. The data did not show every year getting hotter, but it did show uneven temperature changes. This means climate change may appear as instability, not just rising averages. These unstable patterns can still affect people’s lives through health risks, agriculture, water quality, wildfire risk, and daily living conditions.
+
+A limitation of our analysis is that the data only covers Washington State from 2012 to 2024. Also, joining emissions and temperature by year can show patterns, but it cannot prove direct causation. In the future, adding more years and variables such as air quality, rainfall, drought, or wildfire data would give a clearer picture of how emissions affect climate and residents.
+
+## 8. Summary (Mike)
+
+The greenhouse gas emissions were a serious problem that impacts not only Washington state but the Earth by causing climate change and global warming. Our study shows that greenhouse gas emissions have been continuously increasing over the years, and the temperature has also become increasingly fluctuating. Moreover, the exploration of the sector's contribution to greenhouse gas emissions shows that all the companies do release some emissions to the atmosphere, especially the “supplier” category, which largely increases their greenhouse gas emissions. This significant information emphasizes that greenhouse gas emissions were one of the reasons for the rapid climate change and primary derive by the human activities.
+
+All the findings by analyzing the research question indicate that greenhouse gas emissions require serious attention, as well as oversight and supervision by relevant agencies to regulate the sectors. The consequences of the increasing greenhouse gas emissions will cause extreme weather events, health and food security risks, and ocean acidification. Then, it will not be a localized problem but a global problem that will hurt human civilizations and living environments.
